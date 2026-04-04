@@ -133,3 +133,13 @@ export function getSceneItemByGuid(guid, containerId) {
   const item = viewer.getSceneItemByGuid(guid);
   return JSON.stringify(item);
 }
+
+export function disposeViewer(containerId) {
+  let viewer = viewers.get(containerId);
+  if (!viewer) {
+    console.warn("Viewer not found! Searching for a viewer attached to ContainerId " + containerId);
+    return;
+  }
+  viewer.dispose();
+  viewers.delete(containerId);
+}

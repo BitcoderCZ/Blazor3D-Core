@@ -378,6 +378,52 @@ class Viewer3D {
       );
     }
   }
+
+  dispose() {
+   if (this.animationId) {
+        cancelAnimationFrame(this.animationId);
+        this.animationId = null;
+    }
+
+    if (this.controls) {
+        this.controls.dispose();
+        this.controls = null;
+    }
+
+    if (this.scene) {
+        this.scene.traverse((object) => {
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+
+            if (object.material) {
+                const materials = Array.isArray(object.material) 
+                    ? object.material 
+                    : [object.material];
+
+                materials.forEach((mat) => {
+                    for (const key in mat) {
+                        if (mat[key] && mat[key].isTexture) {
+                            mat[key].dispose();
+                        }
+                    }
+                    mat.dispose();
+                });
+            }
+        });
+        this.scene = null;
+    }
+
+    if (this.renderer) {
+        this.renderer.dispose();
+        if (this.renderer.domElement && this.container.contains(this.renderer.domElement)) {
+            this.container.removeChild(this.renderer.domElement);
+        }
+        
+        this.renderer.forceContextLoss(); 
+        this.renderer = null;
+    }
+  }
 }
 
 export default Viewer3D;

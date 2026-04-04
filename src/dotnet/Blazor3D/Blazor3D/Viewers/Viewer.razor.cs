@@ -19,8 +19,10 @@ namespace HomagGroup.Blazor3D.Viewers
     /// <summary>
     /// <para>HomagGroup.Blazor3D viewer component.</para>
     /// </summary>
-    public sealed partial class Viewer : IDisposable
+    public sealed partial class Viewer : IDisposable, IAsyncDisposable
     {
+        private int _disposed = 0;
+
         private IJSObjectReference bundleModule = null!;
 
         private delegate void SelectedObjectStaticEventHandler(Object3DStaticArgs e);
@@ -31,7 +33,7 @@ namespace HomagGroup.Blazor3D.Viewers
 
         private event LoadedObjectEventHandler ObjectLoadedPrivate = null!;
 
-        
+
         /// <summary>
         /// Raises when user selects object by mouse clicking inside viewer area.
         /// </summary>
@@ -42,12 +44,12 @@ namespace HomagGroup.Blazor3D.Viewers
         /// </summary>
         public event LoadedObjectEventHandler ObjectLoaded = null!;
 
-        
+
         /// <summary>
         /// Raises after JavaScript module is completely loaded.
         /// </summary>
         public event LoadedModuleEventHandler JsModuleLoaded = null!;
-       
+
 
         /// <summary>
         /// <para><see cref="Settings.ViewerSettings"/> parameter of the component.</para>
@@ -117,6 +119,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task UpdateScene()
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             var json = JsonConvert.SerializeObject(Scene, SerializationHelper.GetSerializerSettings());
             await bundleModule.InvokeVoidAsync("updateScene", json, ViewerSettings.ContainerId);
         }
@@ -129,10 +136,13 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task SetCameraPositionAsync(Vector3 position, Vector3 lookAt = null!)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             await bundleModule.InvokeVoidAsync("setCameraPosition", position, lookAt, ViewerSettings.ContainerId);
         }
-
-        
 
         /// <summary>
         /// Apply updated camera settings to viewer.
@@ -140,6 +150,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task UpdateCamera(Camera camera)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             Camera = camera;
             var json = JsonConvert.SerializeObject(Camera, SerializationHelper.GetSerializerSettings());
             await bundleModule.InvokeVoidAsync("updateCamera", json, ViewerSettings.ContainerId);
@@ -151,6 +166,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task ShowCurrentCameraInfo()
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             await bundleModule.InvokeVoidAsync("showCurrentCameraInfo", ViewerSettings.ContainerId);
         }
 
@@ -161,6 +181,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task UpdateOrbitControls(OrbitControls orbitControls)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             OrbitControls = orbitControls;
             var json = JsonConvert.SerializeObject(OrbitControls, SerializationHelper.GetSerializerSettings());
             await bundleModule.InvokeVoidAsync("updateOrbitControls", json, ViewerSettings.ContainerId);
@@ -198,6 +223,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task RemoveByUuidAsync(Guid uuid)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             var result = await bundleModule.InvokeAsync<bool>("removeByUuid", uuid, ViewerSettings.ContainerId);
             if (result)
             {
@@ -212,6 +242,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task SelectByUuidAsync(Guid uuid)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             await bundleModule.InvokeVoidAsync("selectByUuid", uuid, ViewerSettings.ContainerId);
         }
 
@@ -221,6 +256,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Task</returns>
         public async Task ClearSceneAsync()
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             await bundleModule.InvokeVoidAsync("clearScene", ViewerSettings.ContainerId);
             Scene.Children.Clear();
         }
@@ -232,6 +272,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Guid of the loaded item</returns>
         public async Task<Guid> Import3DModelAsync(ImportSettings settings)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             settings.Uuid = settings.Uuid ?? Guid.NewGuid();
             settings.Material = settings.Material ?? new MeshStandardMaterial();
             var json = JsonConvert.SerializeObject(settings, SerializationHelper.GetSerializerSettings());
@@ -246,6 +291,11 @@ namespace HomagGroup.Blazor3D.Viewers
         /// <returns>Guid of the loaded item</returns>
         public async Task<Guid> ImportSpriteAsync(SpriteImportSettings settings)
         {
+            if (_disposed is 1)
+            {
+                throw new ObjectDisposedException(nameof(Viewer));
+            }
+
             settings.Uuid = settings.Uuid ?? Guid.NewGuid();
             settings.Material = settings.Material ?? new SpriteMaterial();
             var json = JsonConvert.SerializeObject(settings, SerializationHelper.GetSerializerSettings());
@@ -398,16 +448,31 @@ namespace HomagGroup.Blazor3D.Viewers
                 if (sprite != null)
                 {
                     Scene.Children.Add(sprite);
-                    ObjectLoaded?.Invoke(new Object3DArgs() { UUID= e.UUID });
+                    ObjectLoaded?.Invoke(new Object3DArgs() { UUID = e.UUID });
                 }
             }
         }
 
         public void Dispose()
         {
+            DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 1)
+            {
+                return;
+            }
+
             ObjectSelectedStatic -= OnObjectSelectedStatic;
             ObjectLoadedStatic -= OnObjectLoadedStatic;
             ObjectLoadedPrivate -= OnObjectLoadedPrivate;
+
+            if (bundleModule != null)
+            {
+                await bundleModule.InvokeVoidAsync("disposeViewer", ViewerSettings.ContainerId);
+            }
         }
     }
 }
