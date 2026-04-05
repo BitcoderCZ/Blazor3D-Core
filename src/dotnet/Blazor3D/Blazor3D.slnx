@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Documents/">
+    <File Path="Todo.txt" />
+  </Folder>
+  <Project Path="Blazor3D.Tests/HomagGroup.Blazor3D.Tests.csproj" />
+  <Project Path="Blazor3D/HomagGroup.Blazor3D.csproj" />
+  <Project Path="TestServer/TestServer.csproj" />
+  <Project Path="TestWebAsm/TestWebAsm.csproj" />
+</Solution>

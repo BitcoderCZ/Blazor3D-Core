@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Docs/">
+    <File Path="Todo.txt" />
+  </Folder>
+  <Project Path="Blazor3D.Web/Blazor3D.Web.csproj" />
+  <Project Path="ReferenceGenerator/ReferenceGenerator.csproj" />
+</Solution>

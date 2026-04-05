@@ -50,7 +50,7 @@ namespace HomagGroup.Blazor3D.Core
         /// <summary>
         /// Settings to create movement animations on the object
         /// </summary>
-        public AnimateObject3DSettings AnimateObject3DSettings { get; set; }
+        public AnimateObject3DSettings? AnimateObject3DSettings { get; set; }
 
         /// <summary>
         /// Adds a child <see cref="Object3D"/> object to the Children collection.
